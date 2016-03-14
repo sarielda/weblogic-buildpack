@@ -1,6 +1,6 @@
 # Encoding: utf-8
 # Cloud Foundry Java Buildpack
-# Copyright 2013-2015 the original author or authors.
+# Copyright 2013-2016 the original author or authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -58,7 +58,7 @@ module JavaBuildpack
       puts BUILDPACK_MESSAGE % @buildpack_version
 
       container = component_detection('container', @containers, true).first
-      fail 'No container can run this application' unless container
+      no_container unless container
 
       component_detection('JRE', @jres, true).first.compile
       component_detection('framework', @frameworks, false).each(&:compile)
@@ -71,7 +71,7 @@ module JavaBuildpack
     # @return [String] The payload required to run the application.
     def release
       container = component_detection('container', @containers, true).first
-      fail 'No container can run this application' unless container
+      no_container unless container
 
       commands = []
       commands << component_detection('JRE', @jres, true).first.release
@@ -104,6 +104,7 @@ module JavaBuildpack
       @buildpack_version = BuildpackVersion.new
 
       log_environment_variables
+      log_application_contents application
 
       mutable_java_home   = Component::MutableJavaHome.new
       immutable_java_home = Component::ImmutableJavaHome.new mutable_java_home, app_dir
@@ -168,12 +169,27 @@ module JavaBuildpack
       end
     end
 
+    def log_application_contents(application)
+      @logger.debug do
+        paths = []
+        application.root.find { |f| paths << f.relative_path_from(application.root).to_s }
+
+        "Application Contents: #{paths}"
+      end
+    end
+
     def log_environment_variables
       @logger.debug { "Environment Variables: #{ENV.to_hash}" }
     end
 
     def names(components)
       components.map { |component| component.class.to_s.space_case }.join(', ')
+    end
+
+    def no_container
+      fail 'No container can run this application. Please ensure that you’ve pushed a valid JVM artifact or ' \
+           'artifacts using the -p command line argument or path manifest entry. Information about valid JVM ' \
+           'artifacts can be found at https://github.com/cloudfoundry/java-buildpack#additional-documentation. '
     end
 
     def require_component(component)
@@ -203,8 +219,8 @@ module JavaBuildpack
       # @return [Object] the return value from the given block
       def with_buildpack(app_dir, message)
         app_dir     = Pathname.new(File.expand_path(app_dir))
-        application = Component::Application.new(app_dir)
         Logging::LoggerFactory.instance.setup app_dir
+        application = Component::Application.new(app_dir)
 
         yield new(app_dir, application) if block_given?
       rescue => e

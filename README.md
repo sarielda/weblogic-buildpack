@@ -1,10 +1,12 @@
 # Cloud Foundry WebLogic Buildpack
-[![Build Status](https://travis-ci.org/pivotal-cf/weblogic-buildpack.svg?branch=master)](https://travis-ci.org/pivotal-cf/weblogic-buildpack)
-[![Dependency Status](https://gemnasium.com/pivotal-cf/weblogic-buildpack.svg)](https://gemnasium.com/pivotal-cf/weblogic-buildpack)
-[![Code Climate](https://codeclimate.com/github/pivotal-cf/weblogic-buildpack/badges/gpa.svg)](https://codeclimate.com/github/pivotal-cf/weblogic-buildpack/feed)
-[![Code Climate](https://codeclimate.com/github/pivotal-cf/weblogic-buildpack/badges/coverage.svg)](https://codeclimate.com/github/pivotal-cf/weblogic-buildpack/feed)
 
-The `weblogic-buildpack` is a custom [Cloud Foundry] buildpack, based on a fork of the [Java-Buildpack][], for running JEE applications with WebLogic Server as container on Cloud Foundry.
+The `weblogic-buildpack` is a custom [Cloud Foundry] buildpack, based on a fork of the [Java-Buildpack][], for running JEE applications with WebLogic Server as container on Cloud Foundry.  The WLS Buildpack is more of a proof of the concept and a demo/preview and not an official supported buildpack.
+
+At the time of creation of this buildpack, there was no Diego or Docker support. But since late 2015, Diego supports working with docker images. Users are suggested to explore the Docker option for WebLogic Server when possible if it meets their requirements, compared to customizing, building and maintainng the buildpack.
+
+Links:
+https://github.com/oracle/docker-images/tree/master/OracleWebLogic
+https://docs.oracle.com/middleware/1213/wls/DOCKR/configuration.htm#DOCKR121
 
 The [Java-Buildpack] itself is a [Cloud Foundry][] buildpack for running JVM-based applications.  It is designed to run many JVM-based applications ([Grails][], [Groovy][], Java Main, [Play Framework][], [Spring Boot][], and Servlet) with no additional configuration, but supports configuration of the standard components, and extension to add custom components.
 
@@ -19,19 +21,39 @@ $ cf push <APP-NAME> -p <ARTIFACT> -b https://github.com/pivotal-cf/weblogic-bui
 ## Configuration and Extension
 The buildpack supports extension through the use of Git repository forking. The easiest way to accomplish this is to use [GitHub's forking functionality][] to create a copy of this repository.  Make the required extension changes in the copy of the repository. Then specify the URL of the new repository when pushing Cloud Foundry applications. If the modifications are generally applicable to the Cloud Foundry community, please submit a [pull request][] with the changes.
 
-Buildpack configuration can be overridden with an environment variable matching the configuration file you wish to override minus the `.yml` extension and with a prefix of `JBP_CONFIG`. It is not possible to add new configuration properties and properties with `nil` or empty values will be ignored by the buildpack. The value of the variable should be valid inline yaml. For example, to change the default version of Java to 7 and adjust the memory heuristics apply this environment variable to the application.
+Buildpack configuration can be overridden with an environment variable matching the configuration file you wish to override minus the `.yml` extension and with a prefix of `JBP_CONFIG`. It is not possible to add new configuration properties and properties with `nil` or empty values will be ignored by the buildpack. The value of the variable should be valid inline yaml, referred to as `flow style` in the yaml spec ([Wikipedia] has a good description of this yaml syntax). For example, to change the default version of Java to 7 and adjust the memory heuristics apply this environment variable to the application.
 
 ```bash
-$ cf set-env my-application JBP_CONFIG_OPEN_JDK_JRE 'jre: { version: 1.7.0_+ }'
+$ cf set-env my-application JBP_CONFIG_OPEN_JDK_JRE '{jre: { version: 1.7.0_+ }}'
 ```
 
 If the key or value contains a special character such as `:` it should be escaped with double quotes. For example, to change the default repository path for the buildpack.
 
 ```bash
-$ cf set-env my-application JBP_CONFIG_REPOSITORY 'default_repository_root: "http://repo.example.io"'
+$ cf set-env my-application JBP_CONFIG_REPOSITORY '{default_repository_root: "http://repo.example.io"}'
 ```
 
-Environment variable can also be specified in the applications `manifest` file. See the [Environment Variables][] documentation for more information.
+If the key or value contains an environment variable that you want to bind at runtime you need to escape it from your shell. For example, to add command line arguments containing an environment variable to a [Java Main](docs/container-java_main.md) application.
+
+```bash
+$ cf set-env my-application JBP_CONFIG_JAVA_MAIN '{arguments: "-server.port=\$PORT -foo=bar"}'
+```
+
+Environment variable can also be specified in the applications `manifest` file. For example, to specify an environment variable in an applications manifest file that disables Auto-reconfiguration.
+
+```bash
+  env:
+    JBP_CONFIG_SPRING_AUTO_RECONFIGURATION: '{enabled: false}'
+```
+
+This final example shows how to change the version of Tomcat that is used by the buildpack with an environment variable specified in the applications manifest file.
+
+```bash
+  env:
+    JBP_CONFIG_TOMCAT: '{tomcat: { version: 8.0.+ }}'
+```
+
+See the [Environment Variables][] documentation for more information.
 
 To learn how to configure various properties of the buildpack, follow the "Configuration" links below. More information on extending the buildpack is available [here](docs/extending.md).
 
@@ -49,10 +71,13 @@ To learn how to configure various properties of the buildpack, follow the "Confi
 	* [WebLogic](docs/container-wls.md) ([Configuration](docs/container-wls.md#configuration))
 * Standard Frameworks
 	* [AppDynamics Agent](docs/framework-app_dynamics_agent.md) ([Configuration](docs/framework-app_dynamics_agent.md#configuration))
-	* [Introscope Agent](docs/framework-introscope_agent.md) ([Configuration](docs/framework-introscope_agent.md#configuration))
+	* [Container Certificate Trust Store](docs/framework-container_certificate_trust_store.md) ([Configuration](docs/framework-container_certificate_trust_store.md#configuration))
+	* [Debug](docs/framework-debug.md) ([Configuration](docs/framework-debug.md#configuration))
 	* [DynaTrace Agent](docs/framework-dyna_trace_agent.md) ([Configuration](docs/framework-dyna_trace_agent.md#configuration))
+	* [Introscope Agent](docs/framework-introscope_agent.md) ([Configuration](docs/framework-introscope_agent.md#configuration))
 	* [Java Options](docs/framework-java_opts.md) ([Configuration](docs/framework-java_opts.md#configuration))
 	* [JRebel Agent](docs/framework-jrebel_agent.md) ([Configuration](docs/framework-jrebel_agent.md#configuration))
+	* [JMX](docs/framework-jmx.md) ([Configuration](docs/framework-jmx.md#configuration))
 	* [Luna Security Provider](docs/framework-luna_security_provider.md) ([Configuration](docs/framework-luna_security_provider.md#configuration))
 	* [MariaDB JDBC](docs/framework-maria_db_jdbc.md) ([Configuration](docs/framework-maria_db_jdbc.md#configuration))
 	* [New Relic Agent](docs/framework-new_relic_agent.md) ([Configuration](docs/framework-new_relic_agent.md#configuration))
@@ -61,6 +86,7 @@ To learn how to configure various properties of the buildpack, follow the "Confi
 	* [PostgreSQL JDBC](docs/framework-postgresql_jdbc.md) ([Configuration](docs/framework-postgresql_jdbc.md#configuration))
 	* [Spring Auto Reconfiguration](docs/framework-spring_auto_reconfiguration.md) ([Configuration](docs/framework-spring_auto_reconfiguration.md#configuration))
 	* [Spring Insight](docs/framework-spring_insight.md)
+	* [YourKit Profiler](docs/framework-your_kit_profiler.md) ([Configuration](docs/framework-your_kit_profiler.md#configuration))
 * Standard JREs
 	* [OpenJDK](docs/jre-open_jdk_jre.md) ([Configuration](docs/jre-open_jdk_jre.md#configuration))
 	* [Oracle](docs/jre-oracle_jre.md) ([Configuration](docs/jre-oracle_jre.md#configuration))
@@ -132,6 +158,7 @@ $ bundle exec rake
 This buildpack is released under version 2.0 of the [Apache License][].
 
 [Apache License]: http://www.apache.org/licenses/LICENSE-2.0
+[bosh-lite]: http://github.com/cloudfoundry/bosh-lite/
 [Cloud Foundry]: http://www.cloudfoundry.com
 [contributor guidelines]: CONTRIBUTING.md
 [disables `remote_downloads`]: docs/extending-caches.md#configuration
@@ -140,16 +167,16 @@ This buildpack is released under version 2.0 of the [Apache License][].
 [Grails]: http://grails.org
 [Groovy]: http://groovy.codehaus.org
 [Installing Cloud Foundry on Vagrant]: http://blog.cloudfoundry.com/2013/06/27/installing-cloud-foundry-on-vagrant/
+[java-buildpack]: http://github.com/cloudfoundry/java-buildpack/
+[limited footprint]: http://docs.oracle.com/middleware/1212/wls/START/overview.htm#START234
+[Linux 64 bit JRE]: http://javadl.sun.com/webapps/download/AutoDL?BundleId=83376
+[Oracle WebLogic Application Server]: http://www.oracle.com/technetwork/middleware/weblogic/overview/index.html
+[Pivotal Web Services Marketplace]: http://docs.run.pivotal.io/marketplace/services/
 [Play Framework]: http://www.playframework.com
 [pull request]: https://help.github.com/articles/using-pull-requests
 [Pull requests]: http://help.github.com/send-pull-requests
 [Spring Boot]: http://projects.spring.io/spring-boot/
-[java-buildpack]: http://github.com/cloudfoundry/java-buildpack/
-[Oracle WebLogic Application Server]: http://www.oracle.com/technetwork/middleware/weblogic/overview/index.html
-[bosh-lite]: http://github.com/cloudfoundry/bosh-lite/
-[Pivotal Web Services Marketplace]: http://docs.run.pivotal.io/marketplace/services/
-[User Provided Services]: http://docs.run.pivotal.io/devguide/services/user-provided.html
-[Linux 64 bit JRE]: http://javadl.sun.com/webapps/download/AutoDL?BundleId=83376
-[WebLogic Server]: http://www.oracle.com/technetwork/middleware/weblogic/downloads/index.html
-[limited footprint]: http://docs.oracle.com/middleware/1212/wls/START/overview.htm#START234
 [syslog drain endpoint like Splunk]: http://www.youtube.com/watch?v=rk_K_AAHEEI
+[User Provided Services]: http://docs.run.pivotal.io/devguide/services/user-provided.html
+[WebLogic Server]: http://www.oracle.com/technetwork/middleware/weblogic/downloads/index.html
+[Wikipedia]: https://en.wikipedia.org/wiki/YAML#Basic_components_of_YAML
