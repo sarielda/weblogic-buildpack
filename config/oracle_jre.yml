@@ -21,7 +21,7 @@
 ---
 jre:
   version: 1.7.0_+
-  repository_root: "cskpcloudxp1467.cloud.kp.org/apps/epsadmin/Script_Temp/weblogicbuild/wls"
+  repository_root: "crap"
 memory_calculator:
   version: 2.+
   repository_root: ! '{default.repository.root}/memory-calculator/{platform}/{architecture}'
