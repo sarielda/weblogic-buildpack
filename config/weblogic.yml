@@ -19,7 +19,7 @@
 # e.g.  repository_root: "http://example.com/oracle-wls/{platform}/{architecture}"
 
 version: 12.1.+
-repository_root: "http://rbcbluemix.mybluemix.net/wls"
+repository_root: "cskpcloudxp1467.cloud.kp.org/apps/epsadmin/Script_Temp/weblogicbuild/wls"
 
 # prefer_app_config - Use the App bundled configs over the buildpack bundled configs?
 # If set to true, all configs and scripts packaged with the app bundle will be used for domain and server creation.
