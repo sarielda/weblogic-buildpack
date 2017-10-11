@@ -20,8 +20,8 @@
 # e.g.  repository_root: "http://example.com/oracle-jre/{platform}/{architecture}"
 ---
 jre:
-  version: 1.7.0_+
-  repository_root: "crap"
+  version: 1.8.0_+
+  repository_root: "cskpcloudxp1467.cloud.kp.org/apps/epsadmin/Script_Temp/weblogicbuild/wls"
 memory_calculator:
   version: 2.+
   repository_root: ! '{default.repository.root}/memory-calculator/{platform}/{architecture}'
